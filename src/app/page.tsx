@@ -12,7 +12,7 @@ export default function HomePage() {
   const setLayout = useAppStore((s) => s.setLayout);
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-6 px-5 py-8">
+    <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-5 pb-28 pt-8">
       <header>
         <div className="flex justify-end">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -53,13 +53,17 @@ export default function HomePage() {
         </div>
       </section>
 
-      <button
-        type="button"
-        onClick={() => router.push("/board")}
-        className="mt-auto w-full rounded-xl bg-slate-900 px-5 py-4 text-base font-semibold text-white transition hover:bg-slate-800"
-      >
-        촬영 시작
-      </button>
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-slate-100 bg-white/95 backdrop-blur">
+        <div className="mx-auto w-full max-w-2xl px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3">
+          <button
+            type="button"
+            onClick={() => router.push("/board")}
+            className="w-full rounded-xl bg-slate-900 px-5 py-4 text-base font-semibold text-white transition hover:bg-slate-800"
+          >
+            촬영 시작
+          </button>
+        </div>
+      </div>
     </main>
   );
 }
