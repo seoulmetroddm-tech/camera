@@ -8,7 +8,7 @@ import { MODELS, type ModelId } from "./models";
  */
 const MASK_MAX_SIZE = 1024;
 
-const WORKER_URL = "/workers/segmentation.worker.js";
+const WORKER_URL = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/workers/segmentation.worker.js`;
 
 export interface SegmentationProgress {
   phase: "download" | "prepare" | "infer";

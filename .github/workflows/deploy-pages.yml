@@ -1,0 +1,53 @@
+name: GitHub Pages 배포
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 배포 도중 새 push가 들어와도 겹쳐 돌지 않게 한다.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - uses: actions/configure-pages@v5
+
+      # postinstall(scripts/copy-ort-wasm.mjs)이 onnxruntime wasm을 public/ort/로 복사한다.
+      - name: 의존성 설치
+        run: npm ci
+
+      # GITHUB_PAGES=true일 때만 next.config.ts가 /camera 서브경로(basePath)를 붙인다.
+      - name: 정적 빌드
+        run: npm run build
+        env:
+          GITHUB_PAGES: "true"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

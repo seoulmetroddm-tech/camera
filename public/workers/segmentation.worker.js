@@ -3,11 +3,27 @@
 // 번들러를 거치지 않는 순수 ES 모듈 워커다. Next의 번들러가 워커를 어떻게 다루든
 // 영향을 받지 않도록, onnxruntime 런타임을 우리 서버 경로에서 직접 불러온다.
 // 모델 파일 다운로드와 캐싱은 메인 스레드가 맡고, 여기서는 세션 생성과 추론만 한다.
+//
+// 절대경로("/ort/...")를 그대로 쓰면 GitHub Pages처럼 서브경로(/camera/)에 배포했을 때
+// 어긋난다. 이 워커 스크립트 자신의 URL(self.location) 기준 상대경로로 계산하면
+// 루트든 서브경로든 커스텀 도메인이든 다시 손댈 필요가 없다.
+//
+// 다만 이걸 위해 정적 import를 동적 import로 바꾸면 메시지 유실 위험이 생긴다.
+// 정적 import였을 때는 브라우저가 모듈 그래프를 전부 불러온 뒤에야 이 스크립트를 실행하므로
+// 그 사이 도착하는 메시지가 없었지만, 동적 import는 워커 스크립트가 즉시 실행을 시작하고
+// import가 끝나기 전까지 self.onmessage가 비어있는 틈이 생긴다. 메인 스레드는 워커를 만들자마자
+// postMessage를 보내므로, 리스너가 없는 채로 메시지가 도착하면 그냥 버려진다(재전달 안 됨).
+// 그래서 무엇보다 먼저 리스너부터 등록해 메시지를 큐에 담아두고, 준비되면 순서대로 처리한다.
+const pendingEvents = [];
+self.onmessage = (event) => {
+  pendingEvents.push(event);
+};
 
-import * as ort from "/ort/ort.wasm.bundle.min.mjs";
+const ortBaseUrl = new URL("../ort/", self.location.href).href;
+const ort = await import(`${ortBaseUrl}ort.wasm.bundle.min.mjs`);
 
 // wasm 바이너리도 같은 경로에서 받는다. (외부 CDN 사용 안 함)
-ort.env.wasm.wasmPaths = "/ort/";
+ort.env.wasm.wasmPaths = ortBaseUrl;
 // wasm 멀티스레드는 cross-origin isolation(COOP/COEP)이 있어야 쓸 수 있다.
 // 헤더가 없는 일반 정적 호스팅에서는 1로 떨어지고, 헤더를 켜두면 그만큼 빨라진다.
 ort.env.wasm.numThreads = self.crossOriginIsolated
@@ -82,7 +98,7 @@ async function getSession(modelKey, bytes) {
   return session;
 }
 
-self.onmessage = async (event) => {
+async function handleMessage(event) {
   const { id, modelKey, size, mean, std, bytes, bitmap } = event.data;
 
   try {
@@ -105,4 +121,12 @@ self.onmessage = async (event) => {
       message: error instanceof Error ? error.message : "배경 제거에 실패했습니다.",
     });
   }
+}
+
+// 이제부터는 실제 처리 핸들러로 바로 받고, 그동안 큐에 쌓인 메시지도 도착한 순서대로 처리한다.
+self.onmessage = (event) => {
+  void handleMessage(event);
 };
+for (const event of pendingEvents) {
+  void handleMessage(event);
+}
