@@ -31,7 +31,9 @@ export default function HomePage() {
 
       <section className="rounded-2xl bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-slate-900">접수 정보</h2>
-        <p className="mt-1 text-xs text-slate-500">저장할 파일 이름에 사용됩니다. 비워둬도 됩니다.</p>
+        <p className="mt-1 text-xs text-slate-500">
+          저장할 파일 이름에 사용됩니다. 비워두면 사진을 찍은 뒤 물건 종류를 자동으로 인식해 채워드립니다.
+        </p>
         <label className="mt-4 block">
           <span className="text-xs font-medium text-slate-600">품목명</span>
           <input
