@@ -1,5 +1,6 @@
 import type { Slot } from "@/types";
 import { renderSlot } from "./canvas/render";
+import { classifySubject } from "./classification/client";
 import { toPreviewUrl } from "./image";
 import { useAppStore } from "./store";
 
@@ -33,6 +34,39 @@ export async function setSlotImage(index: number, image: ImageBitmap) {
     mask: null,
     crop: null,
   });
+  void suggestItemName(image);
+}
+
+/**
+ * 배경을 지운 뒤 다시 품목명을 추정한다.
+ *
+ * 배경이 빠지고 피사체에 딱 맞게 잘린 그림은 모델이 학습한 사진과 가장 비슷해서
+ * 촬영 직후 원본보다 훨씬 잘 맞는다. 그때 못 채웠더라도 여기서 한 번 더 기회를 준다.
+ */
+export async function suggestItemNameFromSlot(index: number) {
+  const slot = useAppStore.getState().slots[index];
+  if (!slot?.image || !useAppStore.getState().itemNameIsAuto) return;
+
+  const rendered = renderSlot(slot, "white");
+  if (!rendered) return;
+  await suggestItemName(await createImageBitmap(rendered));
+}
+
+/**
+ * 찍힌 물건의 큰 분류를 추정해 품목명을 채운다.
+ *
+ * 사용자가 직접 입력한 적이 없는 동안(itemNameIsAuto)에는 재촬영할 때마다
+ * 새로 추정한 값으로 덮어써도 된다. 실패해도 촬영 흐름을 막지 않도록 별도로 떼어냈다.
+ */
+async function suggestItemName(image: ImageBitmap) {
+  try {
+    const category = await classifySubject(image);
+    if (!category) return;
+    if (!useAppStore.getState().itemNameIsAuto) return;
+    useAppStore.getState().setAutoItemName(category);
+  } catch {
+    // 인식 실패는 무시한다. 품목명은 사용자가 직접 입력할 수 있다.
+  }
 }
 
 export async function clearSlot(index: number) {

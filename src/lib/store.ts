@@ -28,6 +28,12 @@ const initialSlots = () => Array.from({ length: MAX_SLOTS }, (_, i) => emptySlot
 
 interface AppState {
   itemName: string;
+  /**
+   * itemName이 자동 인식으로 채워진 값인지, 사용자가 직접 입력한 값인지.
+   * true인 동안에는 재촬영할 때마다 자동 인식이 값을 다시 덮어쓸 수 있고,
+   * 사용자가 한 글자라도 직접 입력하면 false로 굳어져 더는 자동으로 안 바뀐다.
+   */
+  itemNameIsAuto: boolean;
   layout: LayoutId;
   slots: Slot[];
   background: BackgroundMode;
@@ -37,6 +43,7 @@ interface AppState {
   gap: number;
   divider: boolean;
   setMeta: (patch: { itemName?: string }) => void;
+  setAutoItemName: (itemName: string) => void;
   setLayout: (layout: LayoutId) => void;
   replaceSlot: (index: number, slot: Slot) => void;
   swapSlots: (a: number, b: number) => void;
@@ -50,6 +57,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set) => ({
   itemName: "",
+  itemNameIsAuto: true,
   layout: "1x1",
   slots: initialSlots(),
   background: "white",
@@ -58,7 +66,9 @@ export const useAppStore = create<AppState>((set) => ({
   gap: 24,
   divider: false,
 
-  setMeta: (patch) => set(patch),
+  // 사용자가 직접 입력한 값이므로 이후로는 자동 인식이 덮어쓰지 않게 잠근다.
+  setMeta: (patch) => set("itemName" in patch ? { ...patch, itemNameIsAuto: false } : patch),
+  setAutoItemName: (itemName) => set({ itemName, itemNameIsAuto: true }),
   setLayout: (layout) => set({ layout }),
 
   replaceSlot: (index, slot) =>
@@ -88,6 +98,6 @@ export const useAppStore = create<AppState>((set) => ({
         slot.image?.close();
         if (slot.preview) URL.revokeObjectURL(slot.preview);
       }
-      return { itemName: "", slots: initialSlots() };
+      return { itemName: "", itemNameIsAuto: true, slots: initialSlots() };
     }),
 }));

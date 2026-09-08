@@ -19,7 +19,7 @@ import {
 } from "@/lib/segmentation/client";
 import { isModelCached } from "@/lib/modelCache";
 import { MODELS, type ModelId } from "@/lib/segmentation/models";
-import { commitSlot, rotateSlot } from "@/lib/slotActions";
+import { commitSlot, rotateSlot, suggestItemNameFromSlot } from "@/lib/slotActions";
 import { useAppStore } from "@/lib/store";
 import { uid } from "@/lib/uid";
 import type { BlurRegion } from "@/types";
@@ -159,6 +159,8 @@ export default function EditClient({ index }: { index: number }) {
       const crop = computeSubjectCrop(mask, slot.width, slot.height);
       await commitSlot(index, { mask, crop });
       resetBrushUndo();
+      // 배경이 빠진 그림으로 품목명을 다시 추정한다 (비어 있을 때만 채운다).
+      void suggestItemNameFromSlot(index);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "배경 제거에 실패했습니다.");
     } finally {
