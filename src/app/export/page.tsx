@@ -15,7 +15,6 @@ export default function ExportPage() {
   const slots = useAppStore((s) => s.slots);
   const background = useAppStore((s) => s.background);
   const format = useAppStore((s) => s.format);
-  const receiptNo = useAppStore((s) => s.receiptNo);
   const itemName = useAppStore((s) => s.itemName);
   const gap = useAppStore((s) => s.gap);
   const divider = useAppStore((s) => s.divider);
@@ -33,7 +32,7 @@ export default function ExportPage() {
   const spec = layoutSpec(layout);
   // JPG는 투명을 표현할 수 없으므로 투명 배경일 때는 PNG로 고정한다.
   const effectiveFormat = background === "transparent" ? "png" : format;
-  const fileName = buildFileName(receiptNo, itemName, effectiveFormat === "png" ? "png" : "jpg");
+  const fileName = buildFileName(itemName, effectiveFormat === "png" ? "png" : "jpg");
 
   useEffect(() => {
     let cancelled = false;

@@ -27,7 +27,6 @@ function emptySlot(index: number): Slot {
 const initialSlots = () => Array.from({ length: MAX_SLOTS }, (_, i) => emptySlot(i));
 
 interface AppState {
-  receiptNo: string;
   itemName: string;
   layout: LayoutId;
   slots: Slot[];
@@ -37,7 +36,7 @@ interface AppState {
   /** 칸 사이 여백(px). 구분선 표시 여부와 함께 합성에 쓰인다. */
   gap: number;
   divider: boolean;
-  setMeta: (patch: { receiptNo?: string; itemName?: string }) => void;
+  setMeta: (patch: { itemName?: string }) => void;
   setLayout: (layout: LayoutId) => void;
   replaceSlot: (index: number, slot: Slot) => void;
   swapSlots: (a: number, b: number) => void;
@@ -50,7 +49,6 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  receiptNo: "",
   itemName: "",
   layout: "1x1",
   slots: initialSlots(),
@@ -90,6 +88,6 @@ export const useAppStore = create<AppState>((set) => ({
         slot.image?.close();
         if (slot.preview) URL.revokeObjectURL(slot.preview);
       }
-      return { receiptNo: "", itemName: "", slots: initialSlots() };
+      return { itemName: "", slots: initialSlots() };
     }),
 }));

@@ -12,6 +12,7 @@ import {
   paintMaskCircle,
   paintMaskStroke,
 } from "@/lib/canvas/maskBrush";
+import { computeSubjectCrop } from "@/lib/canvas/maskBounds";
 import {
   createBackgroundMask,
   type SegmentationProgress,
@@ -155,7 +156,8 @@ export default function EditClient({ index }: { index: number }) {
     setProgress({ phase: "download", ratio: 0 });
     try {
       const mask = await createBackgroundMask(slot.image, modelId, setProgress);
-      await commitSlot(index, { mask });
+      const crop = computeSubjectCrop(mask, slot.width, slot.height);
+      await commitSlot(index, { mask, crop });
       resetBrushUndo();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "배경 제거에 실패했습니다.");

@@ -6,18 +6,20 @@ function sanitize(value: string): string {
     .replace(/\s+/g, "-");
 }
 
-function today(): string {
+function timestamp(): string {
   const now = new Date();
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}${month}${day}`;
+  const hour = String(now.getHours()).padStart(2, "0");
+  const minute = String(now.getMinutes()).padStart(2, "0");
+  const second = String(now.getSeconds()).padStart(2, "0");
+  return `${now.getFullYear()}${month}${day}${hour}${minute}${second}`;
 }
 
-/** {접수번호}_{품목명}_{YYYYMMDD}.{확장자} */
-export function buildFileName(receiptNo: string, itemName: string, extension: string): string {
-  const parts = [receiptNo, itemName].map(sanitize).filter(Boolean);
-  if (parts.length === 0) parts.push("유실물");
-  return `${parts.join("_")}_${today()}.${extension}`;
+/** {YYYYMMDD-HHmmss}_{품목명}.{확장자} */
+export function buildFileName(itemName: string, extension: string): string {
+  const parts = [timestamp(), sanitize(itemName)].filter(Boolean);
+  return `${parts.join("_")}.${extension}`;
 }
 
 export function downloadBlob(blob: Blob, fileName: string) {

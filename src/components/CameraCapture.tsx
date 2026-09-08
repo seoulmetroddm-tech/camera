@@ -30,6 +30,7 @@ export default function CameraCapture({ title, onCapture, onClose }: Props) {
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [ready, setReady] = useState(false);
 
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -38,6 +39,7 @@ export default function CameraCapture({ title, onCapture, onClose }: Props) {
 
   useEffect(() => {
     let cancelled = false;
+    setReady(false);
 
     async function start() {
       // getUserMedia는 HTTPS 또는 localhost에서만 동작한다.
@@ -67,7 +69,8 @@ export default function CameraCapture({ title, onCapture, onClose }: Props) {
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          await videoRef.current.play().catch(() => undefined);
+          // 재생이 막히면 videoWidth가 끝까지 0으로 남아 셔터가 조용히 아무 반응도 안 하게 된다.
+          await videoRef.current.play();
         }
         setError(null);
       } catch (err) {
@@ -84,7 +87,11 @@ export default function CameraCapture({ title, onCapture, onClose }: Props) {
 
   async function handleShutter() {
     const video = videoRef.current;
-    if (!video || busy || !video.videoWidth) return;
+    if (!video || busy) return;
+    if (!video.videoWidth) {
+      setError("카메라가 아직 준비되지 않았습니다. 잠시 후 다시 눌러 주세요.");
+      return;
+    }
     setBusy(true);
     try {
       const canvas = createCanvas(video.videoWidth, video.videoHeight);
@@ -137,8 +144,14 @@ export default function CameraCapture({ title, onCapture, onClose }: Props) {
           playsInline
           muted
           autoPlay
+          onLoadedMetadata={() => setReady(true)}
           className={`h-full w-full object-contain ${facingMode === "user" ? "-scale-x-100" : ""}`}
         />
+        {!ready && !error && (
+          <div className="absolute inset-0 flex items-center justify-center text-sm text-white/80">
+            카메라 준비 중…
+          </div>
+        )}
         {error && (
           <div className="absolute inset-x-4 top-4 rounded-xl bg-white/95 p-4 text-sm text-slate-700 shadow-lg">
             {error}
@@ -149,19 +162,13 @@ export default function CameraCapture({ title, onCapture, onClose }: Props) {
       <div className="flex items-center justify-between gap-4 px-6 pb-8 pt-4">
         <label className="cursor-pointer rounded-lg px-3 py-2 text-sm text-white/80 hover:bg-white/10">
           파일 선택
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleFile}
-            className="hidden"
-          />
+          <input type="file" accept="image/*" onChange={handleFile} className="hidden" />
         </label>
 
         <button
           type="button"
           onClick={handleShutter}
-          disabled={busy || !!error}
+          disabled={busy || !!error || !ready}
           aria-label="촬영"
           className="h-18 w-18 rounded-full border-4 border-white bg-white/20 p-1 disabled:opacity-40"
         >
