@@ -16,9 +16,9 @@ function timestamp(): string {
   return `${now.getFullYear()}${month}${day}${hour}${minute}${second}`;
 }
 
-/** {YYYYMMDD-HHmmss}_{품목명}.{확장자} */
+/** {YYYYMMDDHHmmss}_{품목명}.{확장자} (품목명이 없으면 "유실물") */
 export function buildFileName(itemName: string, extension: string): string {
-  const parts = [timestamp(), sanitize(itemName)].filter(Boolean);
+  const parts = [timestamp(), sanitize(itemName) || "유실물"];
   return `${parts.join("_")}.${extension}`;
 }
 
